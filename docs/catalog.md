@@ -2,6 +2,8 @@
 
 Hearthwright 1.2.0 includes 397 registered Hammer build pieces from Valheim 1.0.7. This includes seasonal pieces and all game progression stages. The repair action is not a placeable piece.
 
+**Build-piece spoilers:** The list below includes the new Valheim 1.0 materials and parts, including pieces you may not have discovered in-game yet.
+
 Search finds pieces across all categories. Material tabs organize construction parts; Furniture, Crafting, and Utility have their own row. Scalewood walls are grouped under Timberwood.
 
 | Section      | Pieces |

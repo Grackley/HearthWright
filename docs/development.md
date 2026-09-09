@@ -2,6 +2,8 @@
 
 Hearthwright uses React, TypeScript, Vite, Canvas2D, and Electron. The public source snapshot starts at version 1.2.0.
 
+This page is for developers working on the source code. To use Hearthwright, [download the portable Windows app](../README.md#download-and-start-planning); none of the steps below are required.
+
 ## Requirements
 
 - Node.js 22.12 or newer
@@ -41,7 +43,7 @@ With the required local bundle available:
 pnpm package:portable
 ```
 
-This produces `dist/Hearthwright-Portable-1.2.0.exe`. The `package:win` command additionally builds an installer. Package availability is determined by the files actually attached to a GitHub release.
+This produces `dist/Hearthwright-Portable-1.2.0.exe`. The community release distributes only the portable app. The source also retains a `package:win` command for maintainers that can build an installer locally; an installer is not offered as a community download.
 
 The opt-in desktop check uses an isolated planner profile:
 

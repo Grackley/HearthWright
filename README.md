@@ -8,17 +8,19 @@
 
 Hearthwright is a free, standalone Windows planner for laying out buildings, workshops, farms, and settlements. Work on a blank canvas or import a PNG of your world, choose a site, and arrange build pieces at game scale.
 
-**Version 1.2.0 · Windows x64 · 397 build pieces · Valheim 1.0.7 catalog**
+**Hearthwright 1.2.0 · Windows x64 · 397 build pieces · Valheim 1.0.7 catalog**
 
-[Quick start](docs/quick-start.md) · [Controls](docs/controls.md) · [Piece catalog](docs/catalog.md) · [Contributing](CONTRIBUTING.md)
+**Build-piece spoilers:** The catalog includes the new pieces from Valheim 1.0, including materials and parts you may not have discovered in-game yet.
+
+[Quick start](docs/quick-start.md) · [Controls](docs/controls.md) · [Piece catalog](docs/catalog.md) · [Download help](docs/download-help.md)
 
 ## Download and start planning
 
-**[Download Hearthwright 1.2.0 for Windows](https://github.com/Grackley/HearthWright/releases/download/v1.2.0/Hearthwright-Portable-1.2.0.exe)** · [Release notes and checksum](https://github.com/Grackley/HearthWright/releases/tag/v1.2.0)
+**[Download Hearthwright 1.2.0 for Windows](https://github.com/Grackley/HearthWright/releases/download/v1.2.0/Hearthwright-Portable-1.2.0.exe)** · [Release notes](https://github.com/Grackley/HearthWright/releases/tag/v1.2.0)
 
-> **Windows download notice:** Hearthwright is currently unsigned. Microsoft Edge or Windows may show **“not commonly downloaded”** or **“Publisher: Unknown.”** These are reputation and publisher warnings; they do not, by themselves, mean malware was detected. Download from this repository's release page and [compare the supplied SHA-256 checksum](docs/quick-start.md#checking-your-download). [Microsoft explains these warnings](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/smartscreen-reputation).
+> **Windows download notice:** Hearthwright is currently unsigned. Microsoft Edge or Windows may show **“not commonly downloaded”** or **“Publisher: Unknown.”** These are reputation and publisher warnings; they do not, by themselves, mean malware was detected. Use the download link above. [Read about the warning](docs/download-help.md#windows-download-warning).
 
-Run the portable executable without installation; the header should show **v1.2.0**. GitHub's **Code → Download ZIP** contains the source code, not the Windows app.
+Download `Hearthwright-Portable-1.2.0.exe` and open it. It is the complete Windows app; no installer, PowerShell commands, or developer tools are needed. The header should show **v1.2.0**. GitHub's **Code → Download ZIP** contains the source code for developers.
 
 The first launch includes a centered walkthrough. Replay it from **? Getting started → Start guided walkthrough** whenever you need a refresher.
 
@@ -44,7 +46,7 @@ One of the matching buildings in Valheim. This is an in-game screenshot, not a 3
 - **Buildings and roofs:** browse 397 pieces by material, including Timberwood, Scalewood walls, Ice, drawbridges, and 67° roofs and supports. Place individual pieces, aligned lines, or filled rectangles.
 - **Multiple floors:** add, reorder, hide, or outline building levels while keeping their contents together.
 - **Workshops and comfortable homes:** inspect crafting requirements, comfort values, station connections, and range overlays.
-- **Material collection:** select a room or an entire structure to see combined material totals. Move and rotate selected pieces as a group.
+- **Material collection:** select pieces on a building level to see their combined material totals. Move and rotate selected pieces as a group.
 - **Farms and settlements:** mark cultivated areas, add notes and drawings, and plan around your imported world map.
 - **Projects you can revisit:** save editable `.hearthwright` files or export a PNG to share your plan.
 
@@ -56,9 +58,15 @@ Maps are optional, user-provided PNGs. Hearthwright does not upload your maps or
 
 For a world image, see the [map export instructions](docs/quick-start.md#bring-in-your-world-map) for the independent [Valheim World Generator](https://valheim-map.world/).
 
-## Feedback and development
+**Map support:** As of September 9, 2026, the map generator reports that Valheim 1.0 is not yet supported. Hearthwright's 1.0 piece catalog is available; you can plan without a map or use an existing compatible full-world PNG while waiting for the generator update. Check the generator's current notice before exporting a new map.
 
-Use [Issues](https://github.com/Grackley/HearthWright/issues) for bugs and focused feature requests, or [Discussions](https://github.com/Grackley/HearthWright/discussions) for questions and shared plans. Include your app version, what you expected, and the steps needed to reproduce a problem. See [contribution guidance](CONTRIBUTING.md) and [development setup](docs/development.md).
+## Feedback
+
+Use [Issues](https://github.com/Grackley/HearthWright/issues) for bugs and focused feature requests, or [Discussions](https://github.com/Grackley/HearthWright/discussions) for questions and shared plans. For a bug report, include your app version, what you expected, and the steps needed to reproduce the problem.
+
+## For developers
+
+The [contribution guidance](CONTRIBUTING.md) and [development setup](docs/development.md) are for people who want to work on Hearthwright's code. They are not setup steps for using the downloaded app. The public source uses schematic piece shapes unless a separate local visual bundle is available; the portable download already includes the previews and piece data.
 
 This source repository starts with the 1.2.0 community release. See the [changelog](CHANGELOG.md).
 

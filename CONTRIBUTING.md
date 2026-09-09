@@ -4,6 +4,8 @@ Thanks for helping improve Hearthwright. Bug reports should include the app vers
 
 ## Development workflow
 
+The steps below are for changing Hearthwright's code. To use the app, [download the portable Windows version](README.md#download-and-start-planning); no developer tools are needed. The public source uses schematic shapes without the separate local visual bundle described in the [development guide](docs/development.md#local-visual-bundles).
+
 1. Install Node.js 22.12 or newer and pnpm 11.
 2. Run `pnpm install`.
 3. Run `pnpm dev` for the renderer or `pnpm desktop` for the full Electron application.
