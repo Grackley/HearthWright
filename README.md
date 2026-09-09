@@ -16,9 +16,9 @@ Hearthwright is a free, standalone Windows planner for laying out buildings, wor
 
 **[Download Hearthwright 1.2.0 for Windows](https://github.com/Grackley/HearthWright/releases/download/v1.2.0/Hearthwright-Portable-1.2.0.exe)** · [Release notes and checksum](https://github.com/Grackley/HearthWright/releases/tag/v1.2.0)
 
-Run the portable executable without installation; the header should show **v1.2.0**. GitHub's **Code → Download ZIP** contains the source code, not the Windows app.
+> **Windows download notice:** Hearthwright is currently unsigned. Microsoft Edge or Windows may show **“not commonly downloaded”** or **“Publisher: Unknown.”** These are reputation and publisher warnings; they do not, by themselves, mean malware was detected. Download from this repository's release page and [compare the supplied SHA-256 checksum](docs/quick-start.md#checking-your-download). [Microsoft explains these warnings](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/smartscreen-reputation).
 
-The executable is unsigned, so Windows may display a SmartScreen warning. Check that your download came from this repository's release page. A matching SHA-256 checksum is supplied with the release; [verification instructions](docs/quick-start.md#checking-your-download) are available in the quick start.
+Run the portable executable without installation; the header should show **v1.2.0**. GitHub's **Code → Download ZIP** contains the source code, not the Windows app.
 
 The first launch includes a centered walkthrough. Replay it from **? Getting started → Start guided walkthrough** whenever you need a refresher.
 
