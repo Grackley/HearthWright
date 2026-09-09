@@ -1,0 +1,35 @@
+# Dependencies and package-manager caches
+node_modules/
+.pnpm-store/
+
+# Compiled and packaged output
+build/
+dist/
+release/
+release-candidate*/
+release-assets/
+*.tsbuildinfo
+
+# User-provided maps, projects, and local application state
+Maps/
+maps/
+*.hearthwright
+.electron-smoke-data/
+.electron-smoke-demo-data/
+.electron-smoke-preview-data/
+
+# Permission-sensitive Valheim-derived material and capture environments
+visual-assets/
+tools/asset-capture/
+permission-request/
+
+# Local diagnostics and screenshots
+artifacts/
+.release-*.png
+*.log
+
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

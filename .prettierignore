@@ -1,0 +1,16 @@
+node_modules
+.pnpm-store
+build
+dist
+release
+release-assets
+Maps
+maps
+visual-assets
+tools/asset-capture
+permission-request
+*.tsbuildinfo
+*.hearthwright
+*.png
+*.svg
+*.exe
