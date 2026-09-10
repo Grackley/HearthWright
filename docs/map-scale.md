@@ -10,13 +10,11 @@ Hearthwright 1.2.1 uses a **24,576-meter square** for full-world **Image Only** 
 
 The calculation is **24,576 ÷ image width**. World origin is at the image center; the full square extends from −12,288 to +12,288 meters on each axis. Cropped images, ordinary screenshots, and images from other exporters are not automatically calibrated by this rule.
 
-## Existing plans
+## Saved plans
 
-Plans made before 1.2.1 retain the earlier 24,000-meter map scale so opening them does not silently change their terrain alignment. Beside the map controls, choose **Earlier map scale · review**, then **Use corrected scale**.
+The corrected scale applies automatically whenever a map or saved plan opens. Older saved map metadata is recalculated from the PNG width. There is no update prompt or alternate scale setting.
 
-The correction expands the map background by 2.4%. Pieces, snapped spacing, notes, and farm areas keep their existing dimensions and positions. Check their placement against the terrain afterward; you may need to select and move a building as a group. The choice is stored in the project and the local draft. **Map scale → Restore earlier scale** reverses the background correction.
-
-New plans use the corrected scale automatically. Changing the map and starting a new plan also uses the corrected scale.
+The background map is 2.4% larger than under the previous calibration. Pieces, snapped spacing, notes, and farm areas keep their existing dimensions and positions. If you made a plan against the earlier background, check its terrain alignment afterward; you may need to select and move a building as a group.
 
 ## Verification and the 24,000-meter discrepancy
 

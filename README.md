@@ -70,7 +70,7 @@ The [contribution guidance](CONTRIBUTING.md) and [development setup](docs/develo
 
 This source repository starts with the 1.2.0 community release. See the [changelog](CHANGELOG.md).
 
-Map calibration was corrected in 1.2.1. Existing plans offer **Earlier map scale · review** beside the map controls. See [map scale and existing plans](docs/map-scale.md).
+Map calibration was corrected in 1.2.1. New and saved plans use the corrected scale automatically. See [map calibration details](docs/map-scale.md).
 
 ## Credits and licensing
 

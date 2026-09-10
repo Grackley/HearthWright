@@ -6,7 +6,6 @@ import {
   mapSeedFromFilename,
   mapTileCoordinates,
   mapTileDownsampleFactor,
-  projectMapWorldWidth,
 } from './mapImages'
 
 describe('PNG map calibration', () => {
@@ -14,15 +13,6 @@ describe('PNG map calibration', () => {
     expect(mapMetersPerPixel(4096)).toBe(6)
     expect(mapMetersPerPixel(6144)).toBe(4)
     expect(mapMetersPerPixel(8192)).toBe(3)
-  })
-
-  it('preserves old plans until corrected, including plans whose map is missing', () => {
-    expect(projectMapWorldWidth({})).toBe(24576)
-    expect(projectMapWorldWidth({ mapInfo: { width: 8192 } })).toBe(24000)
-    expect(projectMapWorldWidth({ mapImageName: 'Map_test.png' })).toBe(24000)
-    expect(projectMapWorldWidth({ pieces: [{}] })).toBe(24000)
-    expect(projectMapWorldWidth({ mapWorldWidthMeters: 24576, pieces: [{}] })).toBe(24576)
-    expect(mapMetersPerPixel(4096, 24000)).toBe(5.859375)
   })
 
   it('recognizes standard image resolutions and keeps one seed across variants', () => {

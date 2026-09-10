@@ -328,7 +328,7 @@ const createSmokeHarness = (app) => {
             await window.webContents.executeJavaScript(`
               localStorage.setItem('hearthwright:preferences:v1', JSON.stringify({ showAllPieces: false, enabledSections: [], advanced: true }));
               localStorage.removeItem('hearthwright:walkthrough:v1');
-              localStorage.setItem('hearthwright-project-v1', JSON.stringify({ version: 1, name: 'Portable planner check', seed: '', pieces: [{ id: 'existing-floor', pieceId: 'wood-floor-2x2', x: 0, y: 0, rotation: 0 }], annotations: [] }));
+              localStorage.setItem('hearthwright-project-v1', JSON.stringify({ version: 1, name: 'Portable planner check', seed: '', mapImageName: 'Missing-scale-test-map.png', mapInfo: { width: 8192, height: 8192, metersPerPixel: 2.9296875, resolution: 'high' }, pieces: [{ id: 'existing-floor', pieceId: 'wood-floor-2x2', x: 0, y: 0, rotation: 0 }], annotations: [] }));
             `)
             window.webContents.reload()
             return

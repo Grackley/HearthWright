@@ -94,23 +94,16 @@ const runPlannerSmoke = async (window, screenshotPath, version) => {
       await waitFor(() => activeFloor() === label, 'Undo level edit to ' + label)
     }
     if (document.querySelectorAll('.level-row').length !== 1) throw new Error('Undo left an empty level behind')
-    const calibrationBefore = await waitFor(() => {
+    if (![...document.querySelectorAll('small')].some(item => item.textContent === '24.576 km overview')) throw new Error('World map scale was not corrected automatically')
+    if (button('Map scale') || button('Earlier map scale · review') || button('Use corrected scale')) throw new Error('An unwanted scale update control is present')
+    const calibratedDraft = await waitFor(() => {
       const draft = JSON.parse(localStorage.getItem('hearthwright-project-v1'))
-      return draft?.activeLevel === 0 && draft.pieces[0]?.level === undefined && Object.keys(draft.levelViewModes).length === 0 ? draft : undefined
-    }, 'Persist the undone level edits before checking map calibration')
-    button('Earlier map scale · review').click()
-    await waitFor(() => document.querySelector('#map-scale-title'), 'Map scale explanation')
-    button('Use corrected scale').click()
-    await waitFor(() => JSON.parse(localStorage.getItem('hearthwright-project-v1'))?.mapWorldWidthMeters === 24576, 'Corrected scale saved')
-    const calibrationAfter = JSON.parse(localStorage.getItem('hearthwright-project-v1'))
-    if (JSON.stringify(calibrationAfter.pieces) !== JSON.stringify(calibrationBefore.pieces) || JSON.stringify(calibrationAfter.annotations) !== JSON.stringify(calibrationBefore.annotations)) throw new Error('Map correction changed plan geometry')
-    button('Map scale').click()
-    await waitFor(() => button('Restore earlier scale'), 'Reversible map scale')
-    button('Keep current scale').click()
-    await waitFor(() => !document.querySelector('[aria-modal="true"]'), 'Close map scale')
+      return draft?.mapInfo?.metersPerPixel === 3 && draft.activeLevel === 0 && draft.pieces[0]?.level === undefined ? draft : undefined
+    }, 'Automatically correct legacy draft metadata without changing the plan')
+    if (calibratedDraft.pieces[0].x !== 0 || calibratedDraft.pieces[0].y !== 0) throw new Error('Map calibration moved the saved build')
     const canvas = document.querySelector('canvas')
     if (!canvas || !canvas.width || !canvas.height) throw new Error('Planning canvas did not initialize')
-    return { mapScaleCorrection: true, mapCorrectionPreservesGeometry: true, mapScaleSaved: true, categories, catalogCounts, catalogImagesLoaded: 397, drawbridgeMaterialsLoaded: true, restoredItems, centeredSteps, walkthroughButtonsStationary: true, walkthroughSkip: true, walkthroughReplay: true, levelReorder: true, levelUndoRedo: true, levelOrderPersisted: true, oldDiscoverySettingsIgnored: true, experimentalControlsAbsent: true, headerVersion: document.querySelector('.brand')?.textContent }
+    return { automaticMapCalibration: true, oldMapMetadataCorrected: true, mapCorrectionPreservesGeometry: true, scaleUpdateControlsAbsent: true, categories, catalogCounts, catalogImagesLoaded: 397, drawbridgeMaterialsLoaded: true, restoredItems, centeredSteps, walkthroughButtonsStationary: true, walkthroughSkip: true, walkthroughReplay: true, levelReorder: true, levelUndoRedo: true, levelOrderPersisted: true, oldDiscoverySettingsIgnored: true, experimentalControlsAbsent: true, headerVersion: document.querySelector('.brand')?.textContent }
   })()`)
   const report = { version, ...checks }
   if (screenshotPath) {
@@ -120,15 +113,6 @@ const runPlannerSmoke = async (window, screenshotPath, version) => {
     const screenshot = await window.capturePage()
     fs.writeFileSync(screenshotPath, screenshot.toPNG())
     fs.writeFileSync(`${screenshotPath}.json`, `${JSON.stringify(report, null, 2)}\n`)
-    await window.webContents.executeJavaScript(`(async () => {
-      [...document.querySelectorAll('button')].find(item => item.textContent.trim() === 'Map scale').click()
-      for (let attempt = 0; attempt < 100 && !document.querySelector('#map-scale-title'); attempt++) await new Promise(resolve => setTimeout(resolve, 50))
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
-    })()`)
-    fs.writeFileSync(`${screenshotPath}.map-scale.png`, (await window.capturePage()).toPNG())
-    await window.webContents.executeJavaScript(
-      `[...document.querySelectorAll('button')].find(item => item.textContent.trim() === 'Keep current scale').click()`,
-    )
     const originalSize = window.getSize()
     window.setSize(1100, 720)
     await window.webContents.executeJavaScript(`(async () => {

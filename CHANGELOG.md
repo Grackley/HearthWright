@@ -3,8 +3,8 @@
 ## 1.2.1 — Correct PNG map scale
 
 - Corrected full-world Image Only PNG calibration to a 24,576-meter span: 3 meters per pixel for an 8192 × 8192 image.
-- Preserved existing plans at their earlier scale until the user chooses **Earlier map scale · review → Use corrected scale**. The correction changes the map background while preserving build dimensions and placement.
-- Saved the selected scale with each project and draft, including when its map is unavailable. Added a reversible map-scale control and documented the verification.
+- Applied the corrected calibration automatically to new and saved plans, including older map metadata, without changing piece or annotation geometry.
+- Documented the distinction between full-world PNG images and the separate All Data export.
 
 ## 1.2.0 — First community release
 

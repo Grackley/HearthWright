@@ -1,12 +1,11 @@
 import { readLevelViewModes } from './levels'
-import { isMapWorldWidth, projectMapWorldWidth } from './mapImages'
+import { mapMetersPerPixel } from './mapImages'
 import { PIECES } from '../data/pieces'
 import type { LevelViewMode, PlacedPiece, PlanAnnotation, PlannerProject } from '../types'
 
 export const PROJECT_STORAGE_KEY = 'hearthwright-project-v1'
 
 export interface ProjectState {
-  mapWorldWidthMeters?: number
   name: string
   seed: string
   pieces: PlacedPiece[]
@@ -150,8 +149,9 @@ export const parseSavedProject = (value: string | null): ProjectState => {
       levelViewModes: readLevelViewModes(project.levelViewModes),
       localMapId: typeof project.localMapId === 'string' ? project.localMapId : undefined,
       mapImageName: typeof project.mapImageName === 'string' ? project.mapImageName : undefined,
-      mapInfo: validMapInfo(project.mapInfo) ? project.mapInfo : undefined,
-      mapWorldWidthMeters: projectMapWorldWidth(project),
+      mapInfo: validMapInfo(project.mapInfo)
+        ? { ...project.mapInfo, metersPerPixel: mapMetersPerPixel(project.mapInfo.width) }
+        : undefined,
     }
   } catch {
     return fallback
@@ -183,12 +183,16 @@ export const parseProjectFile = (value: string): PlannerProject => {
   }
   if (project.mapInfo !== undefined && !validMapInfo(project.mapInfo))
     throw new Error('Invalid project map dimensions')
-  if (project.mapWorldWidthMeters !== undefined && !isMapWorldWidth(project.mapWorldWidthMeters))
-    throw new Error('Invalid project map scale')
   const annotations = readAnnotations(project.annotations, true)
   const ids = [...project.pieces, ...annotations].map((item) => item.id)
   if (new Set(ids).size !== ids.length) throw new Error('Project contains duplicate item IDs')
-  return { ...project, annotations, mapWorldWidthMeters: projectMapWorldWidth(project) }
+  return {
+    ...project,
+    annotations,
+    mapInfo: project.mapInfo
+      ? { ...project.mapInfo, metersPerPixel: mapMetersPerPixel(project.mapInfo.width) }
+      : undefined,
+  }
 }
 
 export const projectFileSlug = (name: string) =>

@@ -23,8 +23,8 @@ vi.mock('./components/PlannerCanvas', () => ({
     useImperativeHandle(ref, () => ({ showWorld: vi.fn(), focusAt: vi.fn() }))
     return (
       <div>
-        <div aria-label="Placed IDs">{props.pieces.map((piece) => piece.id).join(',')}</div>
         <div aria-label="Map width">{props.worldWidth}</div>
+        <div aria-label="Placed IDs">{props.pieces.map((piece) => piece.id).join(',')}</div>
         <div aria-label="Level layout">
           {JSON.stringify({
             pieces: props.pieces,
@@ -93,7 +93,7 @@ async function renderReady() {
 const placedIds = () => screen.getByLabelText('Placed IDs').textContent
 const levelLayout = () => JSON.parse(screen.getByLabelText('Level layout').textContent!)
 
-describe('map calibration upgrade', () => {
+describe('automatic map calibration', () => {
   const map = {
     id: 'test-map',
     seed: 'test',
@@ -119,7 +119,7 @@ describe('map calibration upgrade', () => {
     }
   })
 
-  it('uses the corrected scale for a newly attached map', async () => {
+  it('uses the corrected scale when attaching a new map', async () => {
     localStorage.removeItem(PROJECT_STORAGE_KEY)
     await renderReady()
     fireEvent.change(await screen.findByLabelText('Maps folder'), { target: { value: map.id } })
@@ -127,28 +127,19 @@ describe('map calibration upgrade', () => {
     expect(screen.getByLabelText('Map width').textContent).toBe('24576')
   })
 
-  it('retains a legacy draft, corrects only its background, saves and reopens the choice', async () => {
-    const annotations = [
-      { id: 'note', kind: 'text', text: 'Keep this here', x: 10, y: 20, size: 1, color: '#fff' },
-    ]
+  it('corrects a saved draft automatically and saves it without any update controls', async () => {
     const legacy = {
       ...original,
-      annotations,
       localMapId: map.id,
       mapImageName: map.imageName,
       mapInfo: { width: 8192, height: 8192, metersPerPixel: 2.9296875, resolution: 'high' },
     }
     localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(legacy))
     await renderReady()
-    await screen.findByText(/2.929688 m\/px · 24 km map/)
-    expect(screen.getByLabelText('Map width').textContent).toBe('24000')
-    fireEvent.click(screen.getByRole('button', { name: 'Earlier map scale · review' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Keep current scale' }))
-    expect(screen.getByLabelText('Map width').textContent).toBe('24000')
-    fireEvent.click(screen.getByRole('button', { name: 'Earlier map scale · review' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Use corrected scale' }))
     await screen.findByText(/3.000000 m\/px · 24.576 km map/)
-    expect(levelLayout()).toMatchObject({ pieces: legacy.pieces, annotations })
+    expect(screen.getByLabelText('Map width').textContent).toBe('24576')
+    expect(screen.queryByRole('button', { name: /map scale|corrected scale|earlier scale/i })).toBeNull()
+    expect(levelLayout().pieces).toEqual(legacy.pieces)
     save.mockResolvedValue({
       canceled: false,
       filePath: 'C:\\Plans\\corrected.hearthwright',
@@ -156,24 +147,13 @@ describe('map calibration upgrade', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: 'Save project' }))
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1))
-    const saved = JSON.parse(save.mock.calls[0][0].contents)
-    expect(saved).toMatchObject({
-      mapWorldWidthMeters: 24576,
-      mapInfo: { metersPerPixel: 3 },
+    expect(JSON.parse(save.mock.calls[0][0].contents)).toMatchObject({
       pieces: legacy.pieces,
-      annotations,
+      mapInfo: { metersPerPixel: 3 },
     })
-    cleanup()
-    localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(saved))
-    await renderReady()
-    await screen.findByText(/3.000000 m\/px · 24.576 km map/)
-    fireEvent.click(screen.getByRole('button', { name: 'Map scale' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Restore earlier scale' }))
-    expect(screen.getByLabelText('Map width').textContent).toBe('24000')
-    expect(levelLayout()).toMatchObject({ pieces: legacy.pieces, annotations })
   })
 
-  it('keeps a legacy project scale when opening its local map despite updated library metadata', async () => {
+  it('corrects an opened project file automatically and preserves its piece positions', async () => {
     localStorage.removeItem(PROJECT_STORAGE_KEY)
     open.mockResolvedValue({
       canceled: false,
@@ -183,13 +163,15 @@ describe('map calibration upgrade', () => {
         ...incoming,
         mapImageName: map.imageName,
         localMapId: map.id,
+        mapInfo: { width: 8192, height: 8192, metersPerPixel: 2.9296875, resolution: 'high' },
       }),
     })
     await renderReady()
     fireEvent.click(screen.getByRole('button', { name: 'Open project' }))
-    await screen.findByText(/2.929688 m\/px · 24 km map/)
-    expect(placedIds()).toBe('incoming')
-    expect(screen.getByLabelText('Map width').textContent).toBe('24000')
+    await screen.findByText(/3.000000 m\/px · 24.576 km map/)
+    expect(screen.getByLabelText('Map width').textContent).toBe('24576')
+    expect(levelLayout().pieces).toEqual(incoming.pieces)
+    expect(screen.queryByRole('button', { name: /map scale|corrected scale|earlier scale/i })).toBeNull()
   })
 })
 

@@ -2,16 +2,19 @@ import { describe, expect, it } from 'vitest'
 import { emptyProjectState, parseProjectFile, parseSavedProject, projectFileSlug } from './project'
 
 describe('project persistence', () => {
-  it('round-trips the chosen scale and rejects unsupported calibration values', () => {
-    for (const mapWorldWidthMeters of [24000, 24576]) {
-      const contents = JSON.stringify({ version: 1, pieces: [], mapWorldWidthMeters })
-      expect(parseProjectFile(contents).mapWorldWidthMeters).toBe(mapWorldWidthMeters)
-      expect(parseSavedProject(contents).mapWorldWidthMeters).toBe(mapWorldWidthMeters)
-    }
-    for (const mapWorldWidthMeters of [0, -24000, '24576', 1e100]) {
-      expect(() => parseProjectFile(JSON.stringify({ version: 1, pieces: [], mapWorldWidthMeters }))).toThrow(
-        'Invalid project map scale',
-      )
+  it('automatically corrects older map metadata without changing the saved build', () => {
+    const pieces = [{ id: 'floor', pieceId: 'wood-floor-2x2', x: 100, y: -200, rotation: 22.5 }]
+    const annotations = [{ id: 'note', kind: 'text', text: 'Dock', x: 104, y: -202, size: 1, color: '#fff' }]
+    const contents = JSON.stringify({
+      version: 1,
+      pieces,
+      annotations,
+      mapInfo: { width: 8192, height: 8192, metersPerPixel: 2.9296875, resolution: 'high' },
+    })
+    for (const project of [parseProjectFile(contents), parseSavedProject(contents)]) {
+      expect(project.mapInfo?.metersPerPixel).toBe(3)
+      expect(project.pieces).toEqual(pieces)
+      expect(project.annotations).toEqual(annotations)
     }
   })
   it('opens preview projects and drafts without dropping their placed roof pieces or levels', () => {
