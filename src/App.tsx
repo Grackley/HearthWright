@@ -55,6 +55,8 @@ import {
   mapMetersPerPixel,
   mapSeedFromFilename,
   VALHEIM_WORLD_WIDTH_METERS,
+  LEGACY_MAP_WIDTH_METERS,
+  projectMapWorldWidth,
 } from './core/mapImages'
 import { findSavedMap } from './core/mapLibrary'
 import { rotatePieceGroup } from './core/groupTransform'
@@ -92,7 +94,7 @@ type MapChangeRequest = { kind: 'local'; id: string } | { kind: 'file'; file: Fi
 type ProjectImportRequest = { project: PlannerProject; fileName: string; filePath?: string }
 type SavedPlan = Pick<
   PlannerProject,
-  'name' | 'seed' | 'pieces' | 'annotations' | 'mapImageName' | 'levelViewModes'
+  'name' | 'seed' | 'pieces' | 'annotations' | 'mapImageName' | 'levelViewModes' | 'mapWorldWidthMeters'
 >
 
 const MAP_GENERATOR_URL = 'https://valheim-map.world/'
@@ -145,14 +147,17 @@ function App() {
   const [mapInfo, setMapInfo] = useState({
     width: initial.mapInfo?.width ?? 0,
     height: initial.mapInfo?.height ?? 0,
-    metersPerPixel: initial.mapInfo?.metersPerPixel ?? 0,
+    metersPerPixel: initial.mapInfo?.width ? projectMapWorldWidth(initial) / initial.mapInfo.width : 0,
     resolution: initial.mapInfo?.resolution ?? ('custom' as LocalMapSummary['resolution']),
     imageName: initial.mapImageName ?? '',
   })
   const [localMaps, setLocalMaps] = useState<LocalMapSummary[]>([])
   const [localMapId, setLocalMapId] = useState('')
   const [mapInitializationComplete, setMapInitializationComplete] = useState(false)
-  const worldWidth = VALHEIM_WORLD_WIDTH_METERS
+  const [worldWidth, setWorldWidth] = useState(() => projectMapWorldWidth(initial))
+  const worldWidthRef = useRef(worldWidth)
+  worldWidthRef.current = worldWidth
+  const [showMapScale, setShowMapScale] = useState(false)
   const [tool, setTool] = useState<Tool>('select')
   const [snapMode, setSnapMode] = useState<SnapMode>('piece')
   const [rotation, setRotation] = useState(0)
@@ -274,18 +279,21 @@ function App() {
           }
         }
         if (clearExistingPlan) clearPlan()
+        const nextWorldWidth = clearExistingPlan ? VALHEIM_WORLD_WIDTH_METERS : worldWidthRef.current
+        const metersPerPixel = mapMetersPerPixel(loaded.imageWidth, nextWorldWidth)
+        setWorldWidth(nextWorldWidth)
         replaceMapImage(imageUrl, true)
         setLocalMapId(rememberedId)
         setSeed(loaded.seed)
         setMapInfo({
           width: loaded.imageWidth,
           height: loaded.imageHeight,
-          metersPerPixel: loaded.metersPerPixel,
+          metersPerPixel,
           resolution: loaded.resolution,
           imageName: loaded.imageName,
         })
         setMapStatus('loaded')
-        setNotice(`${loaded.imageName} loaded · ${loaded.metersPerPixel.toFixed(6)} m/px`)
+        setNotice(`${loaded.imageName} loaded · ${metersPerPixel.toFixed(6)} m/px`)
         requestAnimationFrame(() => canvasRef.current?.showWorld())
         return true
       } catch (error) {
@@ -344,6 +352,7 @@ function App() {
   const draftProject = useMemo<PlannerProject>(
     () => ({
       version: 1,
+      mapWorldWidthMeters: worldWidth,
       name: projectName,
       seed,
       pieces,
@@ -361,7 +370,18 @@ function App() {
             resolution: mapInfo.resolution,
           },
     }),
-    [activeLevel, annotations, levelViewModes, localMapId, mapInfo, mapStatus, pieces, projectName, seed],
+    [
+      activeLevel,
+      annotations,
+      levelViewModes,
+      localMapId,
+      mapInfo,
+      mapStatus,
+      pieces,
+      projectName,
+      seed,
+      worldWidth,
+    ],
   )
   const draftSaveFailed = useDraftAutosave(draftProject, mapInitializationComplete && !projectBusy)
 
@@ -639,8 +659,10 @@ function App() {
       }
 
       const resolution = mapImageResolution(image.naturalWidth)
-      const metersPerPixel = mapMetersPerPixel(image.naturalWidth)
+      const nextWorldWidth = clearExistingPlan ? VALHEIM_WORLD_WIDTH_METERS : worldWidthRef.current
+      const metersPerPixel = mapMetersPerPixel(image.naturalWidth, nextWorldWidth)
       if (clearExistingPlan) clearPlan()
+      setWorldWidth(nextWorldWidth)
       replaceMapImage(previewUrl, true)
       setSeed(mapSeedFromFilename(file.name))
       setLocalMapId('')
@@ -697,6 +719,7 @@ function App() {
   const projectSlug = projectFileSlug(projectName)
 
   const currentSaveState = (): SavedPlan => ({
+    mapWorldWidthMeters: worldWidth,
     name: projectName,
     seed,
     pieces: piecesRef.current,
@@ -789,12 +812,13 @@ function App() {
     setPromptError('')
     try {
       let imageUrl = ''
+      const nextWorldWidth = projectMapWorldWidth(project)
       let nextMapId = ''
       let nextMapStatus: 'empty' | 'loaded' | 'imported' = 'empty'
       let nextMapInfo: typeof mapInfo = {
         width: project.mapInfo?.width ?? 0,
         height: project.mapInfo?.height ?? 0,
-        metersPerPixel: project.mapInfo?.metersPerPixel ?? 0,
+        metersPerPixel: project.mapInfo?.width ? nextWorldWidth / project.mapInfo.width : 0,
         resolution: project.mapInfo?.resolution ?? 'custom',
         imageName: project.mapImageName ?? '',
       }
@@ -809,7 +833,7 @@ function App() {
         nextMapInfo = {
           width: embedded.naturalWidth,
           height: embedded.naturalHeight,
-          metersPerPixel: mapMetersPerPixel(embedded.naturalWidth),
+          metersPerPixel: mapMetersPerPixel(embedded.naturalWidth, nextWorldWidth),
           resolution: mapImageResolution(embedded.naturalWidth),
           imageName: project.mapImageName || 'Embedded project map.png',
         }
@@ -832,7 +856,7 @@ function App() {
         nextMapInfo = {
           width: loaded.imageWidth,
           height: loaded.imageHeight,
-          metersPerPixel: loaded.metersPerPixel,
+          metersPerPixel: mapMetersPerPixel(loaded.imageWidth, nextWorldWidth),
           resolution: loaded.resolution,
           imageName: loaded.imageName,
         }
@@ -851,9 +875,11 @@ function App() {
       setLocalMapId(nextMapId)
       setMapStatus(nextMapStatus)
       setMapInfo(nextMapInfo)
+      setWorldWidth(nextWorldWidth)
       setLocalMaps(maps)
       rememberProjectPath(filePath)
       savedPlanRef.current = {
+        mapWorldWidthMeters: nextWorldWidth,
         name,
         seed: nextSeed,
         pieces: project.pieces,
@@ -1059,10 +1085,19 @@ function App() {
                 <small>
                   {mapStatus === 'empty'
                     ? 'Optional · build here or import your world'
-                    : `${mapInfo.width} × ${mapInfo.height}px · ${mapInfo.metersPerPixel.toFixed(6)} m/px · 24 km world${seed ? ` · ${seed}` : ''}`}
+                    : `${mapInfo.width} × ${mapInfo.height}px · ${mapInfo.metersPerPixel.toFixed(6)} m/px · ${worldWidth / 1000} km map${seed ? ` · ${seed}` : ''}`}
                 </small>
               </div>
             </div>
+            {(mapStatus !== 'empty' ||
+              worldWidth === LEGACY_MAP_WIDTH_METERS ||
+              pieces.length > 0 ||
+              annotations.length > 0) && (
+              <button className="text-button" onClick={() => setShowMapScale(true)}>
+                <Ruler size={15} />
+                {worldWidth === LEGACY_MAP_WIDTH_METERS ? 'Earlier map scale · review' : 'Map scale'}
+              </button>
+            )}
             <button className="text-button" onClick={() => mapInputRef.current?.click()}>
               <ImagePlus size={15} /> Import PNG map
             </button>
@@ -1759,6 +1794,47 @@ function App() {
       )}
 
       {showWalkthrough && mapInitializationComplete && <Walkthrough onFinish={finishWalkthrough} />}
+
+      {showMapScale && (
+        <Modal labelledBy="map-scale-title" onClose={() => setShowMapScale(false)}>
+          <span className="section-kicker">MAP CALIBRATION</span>
+          <h2 id="map-scale-title">Match the map to meters</h2>
+          <p>
+            Full-world Image Only PNGs from Valheim World Generator span 24,576 meters. An 8192-pixel map has
+            3 meters per pixel. Cropped maps and screenshots cannot use this scale.
+          </p>
+          <p>
+            {worldWidth === LEGACY_MAP_WIDTH_METERS
+              ? 'This plan retains the earlier 24,000-meter scale to preserve its alignment. Correcting it expands the map background by 2.4%.'
+              : 'This plan uses the corrected 24,576-meter scale. You can restore the earlier scale if needed for an older plan.'}{' '}
+            Changing the map scale keeps your pieces and notes at their existing sizes and positions. Check
+            their alignment with the terrain afterward. This choice is saved with the plan.
+          </p>
+          <div className="modal-actions">
+            <button
+              className="primary-button"
+              onClick={() => {
+                const nextWidth =
+                  worldWidth === LEGACY_MAP_WIDTH_METERS
+                    ? VALHEIM_WORLD_WIDTH_METERS
+                    : LEGACY_MAP_WIDTH_METERS
+                setWorldWidth(nextWidth)
+                setMapInfo((current) => ({
+                  ...current,
+                  metersPerPixel: current.width ? nextWidth / current.width : 0,
+                }))
+                setShowMapScale(false)
+                setNotice(`Map scale set to ${nextWidth.toLocaleString()} meters · check terrain alignment`)
+              }}
+            >
+              {worldWidth === LEGACY_MAP_WIDTH_METERS ? 'Use corrected scale' : 'Restore earlier scale'}
+            </button>
+            <button className="secondary-button" onClick={() => setShowMapScale(false)}>
+              Keep current scale
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {projectBusy && (
         <Modal labelledBy="project-loading-title" onClose={() => {}}>

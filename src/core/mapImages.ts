@@ -1,4 +1,31 @@
-export const VALHEIM_WORLD_WIDTH_METERS = 24000
+// Full-world Image Only PNG bounds, not the generator's separate All Data export.
+// See docs/map-scale.md for the source and desktop image verification.
+export const VALHEIM_WORLD_WIDTH_METERS = 24576
+export const LEGACY_MAP_WIDTH_METERS = 24000
+
+export const isMapWorldWidth = (value: unknown): value is number =>
+  value === VALHEIM_WORLD_WIDTH_METERS || value === LEGACY_MAP_WIDTH_METERS
+
+/** Old documents retain their map alignment until the user reviews the correction. */
+export const projectMapWorldWidth = (project: {
+  mapWorldWidthMeters?: number
+  mapInfo?: unknown
+  mapImageName?: string
+  localMapId?: string
+  mapImage?: string
+  pieces?: unknown[]
+  annotations?: unknown[]
+}) => {
+  if (isMapWorldWidth(project.mapWorldWidthMeters)) return project.mapWorldWidthMeters
+  return project.mapInfo ||
+    project.mapImageName ||
+    project.localMapId ||
+    project.mapImage ||
+    project.pieces?.length ||
+    project.annotations?.length
+    ? LEGACY_MAP_WIDTH_METERS
+    : VALHEIM_WORLD_WIDTH_METERS
+}
 
 export const MAP_TILE_PIXELS = 512
 export const MAP_TILE_DOWNSAMPLE_FACTORS = [1, 2, 4, 8, 16] as const
@@ -21,7 +48,8 @@ export const mapImageResolution = (width: number): MapImageResolution => {
   return 'custom'
 }
 
-export const mapMetersPerPixel = (width: number) => VALHEIM_WORLD_WIDTH_METERS / width
+export const mapMetersPerPixel = (width: number, worldWidth = VALHEIM_WORLD_WIDTH_METERS) =>
+  worldWidth / width
 
 /**
  * Selects a stable power-of-two map mip. The chosen bitmap pixel is never

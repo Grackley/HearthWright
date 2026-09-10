@@ -24,6 +24,7 @@ vi.mock('./components/PlannerCanvas', () => ({
     return (
       <div>
         <div aria-label="Placed IDs">{props.pieces.map((piece) => piece.id).join(',')}</div>
+        <div aria-label="Map width">{props.worldWidth}</div>
         <div aria-label="Level layout">
           {JSON.stringify({
             pieces: props.pieces,
@@ -79,6 +80,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   delete window.hearthwrightProjects
+  delete window.valheimMaps
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
   vi.clearAllMocks()
@@ -90,6 +92,106 @@ async function renderReady() {
 }
 const placedIds = () => screen.getByLabelText('Placed IDs').textContent
 const levelLayout = () => JSON.parse(screen.getByLabelText('Level layout').textContent!)
+
+describe('map calibration upgrade', () => {
+  const map = {
+    id: 'test-map',
+    seed: 'test',
+    imageName: 'Map_test.png',
+    imageWidth: 8192,
+    imageHeight: 8192,
+    metersPerPixel: 3,
+    resolution: 'high' as const,
+  }
+  beforeEach(() => {
+    vi.stubGlobal(
+      'URL',
+      class extends URL {
+        static createObjectURL = vi.fn(() => 'blob:test-map')
+        static revokeObjectURL = vi.fn()
+      },
+    )
+    window.valheimMaps = {
+      list: vi.fn().mockResolvedValue([map]),
+      load: vi.fn().mockResolvedValue({ ...map, imageBytes: new Uint8Array([137, 80, 78, 71]) }),
+      import: vi.fn().mockResolvedValue(map),
+      remember: vi.fn().mockResolvedValue(map),
+    }
+  })
+
+  it('uses the corrected scale for a newly attached map', async () => {
+    localStorage.removeItem(PROJECT_STORAGE_KEY)
+    await renderReady()
+    fireEvent.change(await screen.findByLabelText('Maps folder'), { target: { value: map.id } })
+    await screen.findByText(/3.000000 m\/px · 24.576 km map/)
+    expect(screen.getByLabelText('Map width').textContent).toBe('24576')
+  })
+
+  it('retains a legacy draft, corrects only its background, saves and reopens the choice', async () => {
+    const annotations = [
+      { id: 'note', kind: 'text', text: 'Keep this here', x: 10, y: 20, size: 1, color: '#fff' },
+    ]
+    const legacy = {
+      ...original,
+      annotations,
+      localMapId: map.id,
+      mapImageName: map.imageName,
+      mapInfo: { width: 8192, height: 8192, metersPerPixel: 2.9296875, resolution: 'high' },
+    }
+    localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(legacy))
+    await renderReady()
+    await screen.findByText(/2.929688 m\/px · 24 km map/)
+    expect(screen.getByLabelText('Map width').textContent).toBe('24000')
+    fireEvent.click(screen.getByRole('button', { name: 'Earlier map scale · review' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Keep current scale' }))
+    expect(screen.getByLabelText('Map width').textContent).toBe('24000')
+    fireEvent.click(screen.getByRole('button', { name: 'Earlier map scale · review' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Use corrected scale' }))
+    await screen.findByText(/3.000000 m\/px · 24.576 km map/)
+    expect(levelLayout()).toMatchObject({ pieces: legacy.pieces, annotations })
+    save.mockResolvedValue({
+      canceled: false,
+      filePath: 'C:\\Plans\\corrected.hearthwright',
+      fileName: 'corrected.hearthwright',
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save project' }))
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1))
+    const saved = JSON.parse(save.mock.calls[0][0].contents)
+    expect(saved).toMatchObject({
+      mapWorldWidthMeters: 24576,
+      mapInfo: { metersPerPixel: 3 },
+      pieces: legacy.pieces,
+      annotations,
+    })
+    cleanup()
+    localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(saved))
+    await renderReady()
+    await screen.findByText(/3.000000 m\/px · 24.576 km map/)
+    fireEvent.click(screen.getByRole('button', { name: 'Map scale' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restore earlier scale' }))
+    expect(screen.getByLabelText('Map width').textContent).toBe('24000')
+    expect(levelLayout()).toMatchObject({ pieces: legacy.pieces, annotations })
+  })
+
+  it('keeps a legacy project scale when opening its local map despite updated library metadata', async () => {
+    localStorage.removeItem(PROJECT_STORAGE_KEY)
+    open.mockResolvedValue({
+      canceled: false,
+      fileName: 'legacy.hearthwright',
+      filePath: 'C:\\Plans\\legacy.hearthwright',
+      contents: JSON.stringify({
+        ...incoming,
+        mapImageName: map.imageName,
+        localMapId: map.id,
+      }),
+    })
+    await renderReady()
+    fireEvent.click(screen.getByRole('button', { name: 'Open project' }))
+    await screen.findByText(/2.929688 m\/px · 24 km map/)
+    expect(placedIds()).toBe('incoming')
+    expect(screen.getByLabelText('Map width').textContent).toBe('24000')
+  })
+})
 
 describe('level ordering', () => {
   it('inserts a new floor between occupied levels, restores it with undo/redo, and saves the result', async () => {

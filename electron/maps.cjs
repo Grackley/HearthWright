@@ -1,7 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 
-const WORLD_WIDTH_METERS = 24_000
+// Image Only PNG span; All Data exports use a different extent. See docs/map-scale.md.
+const WORLD_WIDTH_METERS = 24_576
 
 const readPngBufferSize = (buffer) => {
   if (buffer.length < 24 || buffer.toString('ascii', 1, 4) !== 'PNG') {

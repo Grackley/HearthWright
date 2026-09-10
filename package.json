@@ -1,6 +1,6 @@
 {
   "name": "hearthwright",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "type": "module",
   "description": "A desktop build planner for Valheim, calibrated to full-world PNG maps.",
@@ -22,7 +22,7 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc -b",
-    "lint": "oxlint --deny-warnings src electron tools/*.cjs vite.config.ts",
+    "lint": "oxlint --deny-warnings src electron tests tools/*.cjs vite.config.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "tsc -b && vite build",

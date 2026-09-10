@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 — Correct PNG map scale
+
+- Corrected full-world Image Only PNG calibration to a 24,576-meter span: 3 meters per pixel for an 8192 × 8192 image.
+- Preserved existing plans at their earlier scale until the user chooses **Earlier map scale · review → Use corrected scale**. The correction changes the map background while preserving build dimensions and placement.
+- Saved the selected scale with each project and draft, including when its map is unavailable. Added a reversible map-scale control and documented the verification.
+
 ## 1.2.0 — First community release
 
 - Plan with 397 build pieces from Valheim 1.0.7, organized into 14 catalog sections.

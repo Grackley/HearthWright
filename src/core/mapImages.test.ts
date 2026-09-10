@@ -6,13 +6,23 @@ import {
   mapSeedFromFilename,
   mapTileCoordinates,
   mapTileDownsampleFactor,
+  projectMapWorldWidth,
 } from './mapImages'
 
 describe('PNG map calibration', () => {
-  it('calibrates every standard map image to the 24 km world square', () => {
-    expect(mapMetersPerPixel(4096)).toBeCloseTo(5.859375)
-    expect(mapMetersPerPixel(6144)).toBeCloseTo(3.90625)
-    expect(mapMetersPerPixel(8192)).toBeCloseTo(2.9296875)
+  it('calibrates full-world Image Only exports at each supported resolution', () => {
+    expect(mapMetersPerPixel(4096)).toBe(6)
+    expect(mapMetersPerPixel(6144)).toBe(4)
+    expect(mapMetersPerPixel(8192)).toBe(3)
+  })
+
+  it('preserves old plans until corrected, including plans whose map is missing', () => {
+    expect(projectMapWorldWidth({})).toBe(24576)
+    expect(projectMapWorldWidth({ mapInfo: { width: 8192 } })).toBe(24000)
+    expect(projectMapWorldWidth({ mapImageName: 'Map_test.png' })).toBe(24000)
+    expect(projectMapWorldWidth({ pieces: [{}] })).toBe(24000)
+    expect(projectMapWorldWidth({ mapWorldWidthMeters: 24576, pieces: [{}] })).toBe(24576)
+    expect(mapMetersPerPixel(4096, 24000)).toBe(5.859375)
   })
 
   it('recognizes standard image resolutions and keeps one seed across variants', () => {
@@ -24,7 +34,7 @@ describe('PNG map calibration', () => {
   })
 
   it('uses small mip tiles at world scale and native tiles at build scale', () => {
-    expect(mapTileDownsampleFactor((0.03 * 24000) / 8192)).toBe(16)
+    expect(mapTileDownsampleFactor((0.03 * 24576) / 8192)).toBe(16)
     expect(mapTileDownsampleFactor(0.2)).toBe(4)
     expect(mapTileDownsampleFactor(0.4)).toBe(2)
     expect(mapTileDownsampleFactor(0.8)).toBe(1)

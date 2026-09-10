@@ -2,6 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { emptyProjectState, parseProjectFile, parseSavedProject, projectFileSlug } from './project'
 
 describe('project persistence', () => {
+  it('round-trips the chosen scale and rejects unsupported calibration values', () => {
+    for (const mapWorldWidthMeters of [24000, 24576]) {
+      const contents = JSON.stringify({ version: 1, pieces: [], mapWorldWidthMeters })
+      expect(parseProjectFile(contents).mapWorldWidthMeters).toBe(mapWorldWidthMeters)
+      expect(parseSavedProject(contents).mapWorldWidthMeters).toBe(mapWorldWidthMeters)
+    }
+    for (const mapWorldWidthMeters of [0, -24000, '24576', 1e100]) {
+      expect(() => parseProjectFile(JSON.stringify({ version: 1, pieces: [], mapWorldWidthMeters }))).toThrow(
+        'Invalid project map scale',
+      )
+    }
+  })
   it('opens preview projects and drafts without dropping their placed roof pieces or levels', () => {
     const pieces = [
       { id: 'floor', pieceId: 'wood-floor-2x2', x: 0, y: 0, rotation: 0, level: 0 },

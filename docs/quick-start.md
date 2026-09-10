@@ -2,7 +2,7 @@
 
 ## Open Hearthwright
 
-Download [Hearthwright-Portable-1.2.0.exe](https://github.com/Grackley/HearthWright/releases/download/v1.2.0/Hearthwright-Portable-1.2.0.exe) and open it. That file is the Windows app. No installation or PowerShell commands are needed. If Windows shows a download warning, see [download help](download-help.md#windows-download-warning).
+Download [Hearthwright-Portable-1.2.1.exe](https://github.com/Grackley/HearthWright/releases/download/v1.2.1/Hearthwright-Portable-1.2.1.exe) and open it. That file is the Windows app. No installation or PowerShell commands are needed. If Windows shows a download warning, see [download help](download-help.md#windows-download-warning).
 
 The first launch offers a guided walkthrough. You can skip it or replay it later from **? Getting started → Start guided walkthrough**. The **?** button opens the app's built-in help; **Full guide on GitHub** takes you to the repository.
 

@@ -247,6 +247,7 @@ export interface Camera {
 }
 
 export interface PlannerProject {
+  mapWorldWidthMeters?: number
   version: 1
   name: string
   seed: string
