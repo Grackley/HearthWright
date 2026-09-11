@@ -7,6 +7,8 @@ import { WALKTHROUGH_KEY } from './components/Walkthrough'
 import { PROJECT_STORAGE_KEY } from './core/project'
 import { CATEGORIES } from './data/pieces'
 
+const canvasFocus = vi.hoisted(() => vi.fn())
+
 vi.mock('./hooks/usePieceSprites', () => ({
   usePieceSprites: () => ({
     sprites: {},
@@ -20,10 +22,12 @@ vi.mock('./hooks/usePieceSprites', () => ({
 }))
 vi.mock('./components/PlannerCanvas', () => ({
   default: forwardRef(function TestCanvas(props: ComponentProps<typeof PlannerCanvas>, ref) {
-    useImperativeHandle(ref, () => ({ showWorld: vi.fn(), focusAt: vi.fn() }))
+    useImperativeHandle(ref, () => ({ showWorld: vi.fn(), focusAt: canvasFocus }))
     return (
       <div>
         <div aria-label="Map width">{props.worldWidth}</div>
+        <div aria-label="Map image">{props.mapImage}</div>
+        <div aria-label="Grid visible">{String(props.showGrid)}</div>
         <div aria-label="Placed IDs">{props.pieces.map((piece) => piece.id).join(',')}</div>
         <div aria-label="Level layout">
           {JSON.stringify({
@@ -92,6 +96,183 @@ async function renderReady() {
 }
 const placedIds = () => screen.getByLabelText('Placed IDs').textContent
 const levelLayout = () => JSON.parse(screen.getByLabelText('Level layout').textContent!)
+
+describe('new blank projects', () => {
+  const map = {
+    id: 'test-map',
+    seed: 'test',
+    imageName: 'Map_test.png',
+    imageWidth: 8192,
+    imageHeight: 8192,
+    metersPerPixel: 3,
+    resolution: 'high' as const,
+  }
+  const mappedPlan = {
+    ...original,
+    seed: map.seed,
+    localMapId: map.id,
+    mapImageName: map.imageName,
+    mapInfo: { width: 8192, height: 8192, metersPerPixel: 3, resolution: 'high' },
+    activeLevel: 1,
+    levelViewModes: { 0: 'hidden', 1: 'actual' },
+    annotations: [
+      { id: 'note', kind: 'text', text: 'Keep me', x: 0, y: 0, size: 1, color: '#fff', level: 1 },
+    ],
+  }
+
+  beforeEach(() => {
+    localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(mappedPlan))
+    localStorage.setItem('hearthwright:project-path:v1', 'C:\\Plans\\mine.hearthwright')
+    vi.stubGlobal(
+      'URL',
+      class extends URL {
+        static createObjectURL = vi.fn(() => 'blob:test-map')
+        static revokeObjectURL = vi.fn()
+      },
+    )
+    window.valheimMaps = {
+      list: vi.fn().mockResolvedValue([map]),
+      load: vi.fn().mockResolvedValue({ ...map, imageBytes: new Uint8Array([137, 80, 78, 71]) }),
+      import: vi.fn().mockResolvedValue(map),
+      remember: vi.fn().mockResolvedValue(map),
+    }
+  })
+
+  async function openPrompt() {
+    await renderReady()
+    await screen.findByText(/3.000000 m\/px · 24.576 km map/)
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }))
+    await screen.findByRole('dialog', { name: 'Save before starting a new project?' })
+  }
+
+  it('protects the current plan and undo history when the user cancels', async () => {
+    await renderReady()
+    await screen.findByText(/3.000000 m\/px · 24.576 km map/)
+    fireEvent.click(screen.getByText('Place test floor'))
+    fireEvent.click(screen.getByText('Select test pieces'))
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }))
+    fireEvent.keyDown(window, { key: 'Delete' })
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true })
+    expect(placedIds()).toBe('original,added')
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByLabelText('Map image').textContent).toBe('blob:test-map')
+    expect(levelLayout().annotations).toEqual(mappedPlan.annotations)
+    expect(localStorage.getItem('hearthwright:project-path:v1')).toBe('C:\\Plans\\mine.hearthwright')
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true })
+    expect(placedIds()).toBe('original')
+  })
+
+  it.each(['canceled', 'failed'])('keeps the map and work if saving is %s', async (result) => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    if (result === 'failed') save.mockRejectedValue(new Error('Disk full'))
+    await openPrompt()
+    fireEvent.click(screen.getByRole('button', { name: 'Save & start new' }))
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1))
+    await waitFor(() =>
+      expect((screen.getByRole('button', { name: 'Save & start new' }) as HTMLButtonElement).disabled).toBe(
+        false,
+      ),
+    )
+    expect(placedIds()).toBe('original')
+    expect(screen.getByLabelText('Map image').textContent).toBe('blob:test-map')
+    expect(levelLayout().annotations).toEqual(mappedPlan.annotations)
+    if (result === 'failed') expect(screen.getByRole('alert').textContent).toContain('Saving failed')
+  })
+
+  it('saves the old plan before clearing, then saves new work to a different file', async () => {
+    save.mockResolvedValue({
+      canceled: false,
+      filePath: 'C:\\Plans\\mine.hearthwright',
+      fileName: 'mine.hearthwright',
+    })
+    await openPrompt()
+    fireEvent.click(screen.getByRole('button', { name: 'Save & start new' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(JSON.parse(save.mock.calls[0][0].contents)).toMatchObject(mappedPlan)
+    expect(save.mock.calls[0][0].filePath).toBe('C:\\Plans\\mine.hearthwright')
+    expect(placedIds()).toBe('')
+    expect(localStorage.getItem('hearthwright:project-path:v1')).toBeNull()
+    fireEvent.click(screen.getByText('Place test floor'))
+    fireEvent.click(screen.getByRole('button', { name: 'Save project' }))
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(2))
+    expect(save.mock.calls[1][0].filePath).toBeUndefined()
+    expect(JSON.parse(save.mock.calls[1][0].contents)).toMatchObject({
+      name: 'New build plan',
+      pieces: [{ id: 'added' }],
+      seed: '',
+    })
+  })
+
+  it('clears all project state, stays blank after restart, and can attach the same map later', async () => {
+    await renderReady()
+    await screen.findByText(/3.000000 m\/px · 24.576 km map/)
+    fireEvent.click(screen.getByText('Select test pieces'))
+    fireEvent.keyDown(window, { key: 'c', ctrlKey: true })
+    fireEvent.click(screen.getByText('Place test floor'))
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start without saving' }))
+    expect(levelLayout()).toEqual({ pieces: [], annotations: [], activeLevel: 0, levelViewModes: {} })
+    expect(screen.getByLabelText('Map image').textContent).toBe('')
+    expect(screen.getByLabelText('Grid visible').textContent).toBe('true')
+    expect((screen.getByRole('textbox', { name: 'Project name' }) as HTMLInputElement).value).toBe(
+      'New build plan',
+    )
+    expect((screen.getByLabelText('Maps folder') as HTMLSelectElement).value).toBe('')
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-map')
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true })
+    fireEvent.keyDown(window, { key: 'y', ctrlKey: true })
+    fireEvent.keyDown(window, { key: 'v', ctrlKey: true })
+    expect(placedIds()).toBe('')
+    await waitFor(() => expect(canvasFocus).toHaveBeenCalledWith({ x: 0, y: 0 }))
+    await waitFor(() => {
+      const draft = JSON.parse(localStorage.getItem(PROJECT_STORAGE_KEY)!)
+      expect(draft).toMatchObject({
+        name: 'New build plan',
+        pieces: [],
+        annotations: [],
+        seed: '',
+        activeLevel: 0,
+      })
+      expect(draft.mapInfo).toBeUndefined()
+      expect(draft.mapImageName).toBeUndefined()
+      expect(draft.localMapId).toBeUndefined()
+    })
+    cleanup()
+    vi.mocked(window.valheimMaps!.load).mockClear()
+    await renderReady()
+    await waitFor(() =>
+      expect((screen.getByRole('button', { name: 'New project' }) as HTMLButtonElement).disabled).toBe(false),
+    )
+    expect(window.valheimMaps!.load).not.toHaveBeenCalled()
+    expect(screen.getByLabelText('Map image').textContent).toBe('')
+    expect(screen.getByLabelText('Grid visible').textContent).toBe('true')
+    expect(screen.queryByText('Level 2')).toBeNull()
+    fireEvent.click(screen.getByText('Place test floor'))
+    fireEvent.change(screen.getByLabelText('Maps folder'), { target: { value: map.id } })
+    await screen.findByText(/3.000000 m\/px · 24.576 km map/)
+    expect(placedIds()).toBe('added')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('starts directly when the current project is already saved', async () => {
+    save.mockResolvedValue({
+      canceled: false,
+      filePath: 'C:\\Plans\\mine.hearthwright',
+      fileName: 'mine.hearthwright',
+    })
+    await renderReady()
+    await screen.findByText(/3.000000 m\/px · 24.576 km map/)
+    fireEvent.click(screen.getByRole('button', { name: 'Save project' }))
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('mine.hearthwright saved'))
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(placedIds()).toBe('')
+    expect(screen.getByLabelText('Map image').textContent).toBe('')
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+})
 
 describe('automatic map calibration', () => {
   const map = {

@@ -1306,10 +1306,12 @@ const PlannerCanvas = forwardRef<CanvasHandle, PlannerCanvasProps>((props, ref) 
         const rect = canvasRef.current?.getBoundingClientRect()
         const scale = rect ? (Math.min(rect.width, rect.height) / props.worldWidth) * 0.92 : 0.03
         updateCamera({ x: 0, y: 0, scale })
+        reportCursor(cursorRef.current, scale)
       },
       focusAt: (point = cursorRef.current) => {
         perfEvent('camera_focus', { x: point.x, y: point.y })
         updateCamera({ x: point.x, y: point.y, scale: 20 })
+        reportCursor(point, 20)
       },
       exportPng: () => {
         flushRenderChunksLatestRef.current()
@@ -1336,7 +1338,7 @@ const PlannerCanvas = forwardRef<CanvasHandle, PlannerCanvasProps>((props, ref) 
         return true
       },
     }),
-    [markRenderPiecesHot, props.onMoveMany, props.worldWidth, updateCamera],
+    [markRenderPiecesHot, props.onMoveMany, props.worldWidth, reportCursor, updateCamera],
   )
 
   useEffect(() => {

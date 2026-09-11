@@ -43,12 +43,12 @@ With the required local bundle available:
 pnpm package:portable
 ```
 
-This produces `dist/Hearthwright-Portable-1.2.1.exe`. The community release distributes only the portable app. The source also retains a `package:win` command for maintainers that can build an installer locally; an installer is not offered as a community download.
+This produces `dist/Hearthwright-Portable-1.2.2.exe`. The community release distributes only the portable app. The source also retains a `package:win` command for maintainers that can build an installer locally; an installer is not offered as a community download.
 
 The opt-in desktop check uses an isolated planner profile:
 
 ```powershell
-.\dist\Hearthwright-Portable-1.2.1.exe --smoke-planner --smoke-screenshot=artifacts/planner-check.png
+.\dist\Hearthwright-Portable-1.2.2.exe --smoke-planner --smoke-screenshot=artifacts/planner-check.png
 ```
 
 It checks catalog images, material requirements, the walkthrough, and level operations. The check requires the complete matching visual bundle. It writes a report and screenshots under `artifacts`.

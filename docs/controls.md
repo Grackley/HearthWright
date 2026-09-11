@@ -16,6 +16,7 @@
 | Toggle snapping                 | `S`                                          |
 | Temporarily ignore snapping     | Hold `Shift` while placing                   |
 | Save / Save As                  | `Ctrl+S` / `Ctrl+Shift+S`                    |
+| Start a blank project           | **New project** in the top bar               |
 | Cut / copy / paste              | `Ctrl+X` / `Ctrl+C` / `Ctrl+V`               |
 | Delete selection                | `Delete`, `Backspace`, or the toolbar button |
 | Undo / redo                     | `Ctrl+Z` / `Ctrl+Y`                          |

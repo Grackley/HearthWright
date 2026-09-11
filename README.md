@@ -8,7 +8,7 @@
 
 Hearthwright is a free, standalone Windows planner for laying out buildings, workshops, farms, and settlements. Work on a blank canvas or import a PNG of your world, choose a site, and arrange build pieces at game scale.
 
-**Hearthwright 1.2.1 · Windows x64 · 397 build pieces · Valheim 1.0.7 catalog**
+**Hearthwright 1.2.2 · Windows x64 · 397 build pieces · Valheim 1.0.7 catalog**
 
 **Build-piece spoilers:** The catalog includes the new pieces from Valheim 1.0, including materials and parts you may not have discovered in-game yet.
 
@@ -16,13 +16,15 @@ Hearthwright is a free, standalone Windows planner for laying out buildings, wor
 
 ## Download and start planning
 
-**[Download Hearthwright 1.2.1 for Windows](https://github.com/Grackley/HearthWright/releases/download/v1.2.1/Hearthwright-Portable-1.2.1.exe)** · [Release notes](https://github.com/Grackley/HearthWright/releases/tag/v1.2.1)
+**[Download Hearthwright 1.2.2 for Windows](https://github.com/Grackley/HearthWright/releases/download/v1.2.2/Hearthwright-Portable-1.2.2.exe)** · [Release notes](https://github.com/Grackley/HearthWright/releases/tag/v1.2.2)
 
 > **Windows download notice:** Hearthwright is currently unsigned. Microsoft Edge or Windows may show **“not commonly downloaded”** or **“Publisher: Unknown.”** These are reputation and publisher warnings; they do not, by themselves, mean malware was detected. Use the download link above. [Read about the warning](docs/download-help.md#windows-download-warning).
 
-Download `Hearthwright-Portable-1.2.1.exe` and open it. It is the complete Windows app; no installer, PowerShell commands, or developer tools are needed. The header should show **v1.2.1**. GitHub's **Code → Download ZIP** contains the source code for developers.
+Download `Hearthwright-Portable-1.2.2.exe` and open it. It is the complete Windows app; no installer, PowerShell commands, or developer tools are needed. The header should show **v1.2.2**. GitHub's **Code → Download ZIP** contains the source code for developers.
 
 The first launch includes a centered walkthrough. Replay it from **? Getting started → Start guided walkthrough** whenever you need a refresher.
+
+To start fresh, choose **New project** at the top. It offers to save your current work, then opens a blank grid with one ground-floor level. Importing a map is optional, and your saved projects and map library stay available.
 
 ## A plan and the build it represents
 

@@ -103,9 +103,46 @@ const runPlannerSmoke = async (window, screenshotPath, version) => {
     if (calibratedDraft.pieces[0].x !== 0 || calibratedDraft.pieces[0].y !== 0) throw new Error('Map calibration moved the saved build')
     const canvas = document.querySelector('canvas')
     if (!canvas || !canvas.width || !canvas.height) throw new Error('Planning canvas did not initialize')
-    return { automaticMapCalibration: true, oldMapMetadataCorrected: true, mapCorrectionPreservesGeometry: true, scaleUpdateControlsAbsent: true, categories, catalogCounts, catalogImagesLoaded: 397, drawbridgeMaterialsLoaded: true, restoredItems, centeredSteps, walkthroughButtonsStationary: true, walkthroughSkip: true, walkthroughReplay: true, levelReorder: true, levelUndoRedo: true, levelOrderPersisted: true, oldDiscoverySettingsIgnored: true, experimentalControlsAbsent: true, headerVersion: document.querySelector('.brand')?.textContent }
+    button('New project').click()
+    await waitFor(() => document.querySelector('#new-project-title'), 'Save before new project')
+    button('Cancel').click()
+    await waitFor(() => !document.querySelector('[aria-modal="true"]'), 'Cancel new project')
+    if (Number(document.querySelector('.summary-count strong')?.textContent) !== 1) throw new Error('Cancel discarded the current plan')
+    button('New project').click()
+    ;(await waitFor(() => button('Start without saving'), 'Discard choice')).click()
+    const blank = await waitFor(() => {
+      const draft = JSON.parse(localStorage.getItem('hearthwright-project-v1'))
+      return draft?.name === 'New build plan' && draft.pieces.length === 0 ? draft : undefined
+    }, 'Persist new blank project')
+    if (blank.annotations.length || blank.activeLevel !== 0 || Object.keys(blank.levelViewModes).length || blank.seed || blank.mapInfo || blank.mapImageName || blank.localMapId) throw new Error('The new project retained old content or map metadata')
+    if (localStorage.getItem('hearthwright:project-path:v1')) throw new Error('The new project retained the previous save destination')
+    if (!button('Undo (Ctrl+Z)').disabled || !button('Redo (Ctrl+Y)').disabled || !button('Paste selection (Ctrl+V)').disabled) throw new Error('The new project retained editing history or clipboard content')
+    if (document.querySelectorAll('.level-row').length !== 1 || activeFloor() !== 'Ground floor') throw new Error('The new project did not start on one ground floor')
+    return { newProject: true, newProjectCancel: true, newProjectClearsState: true, automaticMapCalibration: true, oldMapMetadataCorrected: true, mapCorrectionPreservesGeometry: true, scaleUpdateControlsAbsent: true, categories, catalogCounts, catalogImagesLoaded: 397, drawbridgeMaterialsLoaded: true, restoredItems, centeredSteps, walkthroughButtonsStationary: true, walkthroughSkip: true, walkthroughReplay: true, levelReorder: true, levelUndoRedo: true, levelOrderPersisted: true, oldDiscoverySettingsIgnored: true, experimentalControlsAbsent: true, headerVersion: document.querySelector('.brand')?.textContent }
   })()`)
-  const report = { version, ...checks }
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Reload timed out')), 20000)
+    window.webContents.once('did-finish-load', () => {
+      clearTimeout(timeout)
+      resolve()
+    })
+    window.webContents.reload()
+  })
+  await window.webContents.executeJavaScript(`(async () => {
+    const deadline = Date.now() + 20000
+    while (Date.now() < deadline) {
+      const ready = document.querySelector('.new-project-button')
+      const grid = [...document.querySelectorAll('[role="switch"]')].find(item => item.textContent.includes('Build grid'))
+      if (ready && !ready.disabled && grid?.getAttribute('aria-checked') === 'true' && document.querySelector('.status-center span:last-child')?.textContent === '2000%') break
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    if (Number(document.querySelector('.summary-count strong')?.textContent) !== 0 || !document.querySelector('.source-status.empty') || document.querySelectorAll('.level-row').length !== 1) throw new Error('The blank project was not restored after reload')
+    if (document.querySelector('[aria-label="Project name"]')?.value !== 'New build plan') throw new Error('The previous project name returned after reload')
+    const grid = [...document.querySelectorAll('[role="switch"]')].find(item => item.textContent.includes('Build grid'))
+    if (grid?.getAttribute('aria-checked') !== 'true') throw new Error('The blank grid is not visible after reload')
+    if (document.querySelector('.status-center span:last-child')?.textContent !== '2000%') throw new Error('The blank canvas did not restore at building zoom')
+  })()`)
+  const report = { version, ...checks, newProjectRestoresBlank: true }
   if (screenshotPath) {
     await window.webContents.executeJavaScript(
       `new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 150))))`,
@@ -121,6 +158,8 @@ const runPlannerSmoke = async (window, screenshotPath, version) => {
       const tabs = document.querySelector('.category-tabs').getBoundingClientRect()
       const list = document.querySelector('.piece-list').getBoundingClientRect()
       if (tabs.right > innerWidth || tabs.bottom >= innerHeight || list.height < 150) throw new Error('Catalog does not fit at the minimum window size')
+      const create = document.querySelector('.new-project-button')
+      if (Number.parseFloat(getComputedStyle(create).fontSize) < 10 || create.getBoundingClientRect().right > innerWidth) throw new Error('New project label is not visible at the minimum window size')
     })()`)
     fs.writeFileSync(`${screenshotPath}.compact.png`, (await window.capturePage()).toPNG())
     window.setSize(...originalSize)

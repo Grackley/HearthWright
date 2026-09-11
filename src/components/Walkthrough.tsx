@@ -68,7 +68,7 @@ const steps = [
   {
     title: 'Save your build and keep exploring',
     target: 'save',
-    text: 'Save project keeps an editable .hearthwright file. Save As creates another copy. Open project loads a saved plan; Export PNG shares the current view as an image.',
+    text: 'New project starts a blank canvas and offers to save your current work. Save project keeps an editable .hearthwright file. Save As makes a copy. Open project loads a saved plan; Export PNG shares the current view.',
     hint: 'Ctrl+S saves · Ctrl+Shift+S saves a copy. The ? button reopens Help and this walkthrough.',
   },
 ]

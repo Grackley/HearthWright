@@ -144,6 +144,14 @@ input:focus-visible {
   gap: 8px;
   padding: 0 18px;
 }
+
+.header-actions .new-project-button {
+  width: auto;
+  padding: 0 13px;
+  font-size: 12px;
+  gap: 7px;
+  white-space: nowrap;
+}
 button {
   border: 0;
   cursor: pointer;

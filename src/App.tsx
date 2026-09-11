@@ -10,6 +10,7 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
+  FilePlus2,
   Focus,
   Grid3X3,
   Grid2X2Plus,
@@ -69,7 +70,13 @@ import {
 import { isCultivatorErase, selectableAnnotationCount, selectedAnnotationObjectCount } from './core/farming'
 import type { LayerOrderCommand } from './core/layerOrder'
 import { summarizeSelectedMaterials } from './core/materials'
-import { parseProjectFile, parseSavedProject, projectFileSlug, PROJECT_STORAGE_KEY } from './core/project'
+import {
+  emptyProjectState,
+  parseProjectFile,
+  parseSavedProject,
+  projectFileSlug,
+  PROJECT_STORAGE_KEY,
+} from './core/project'
 import { usePlanHistory } from './hooks/usePlanHistory'
 import { usePieceSprites } from './hooks/usePieceSprites'
 import { useDraftAutosave } from './hooks/useDraftAutosave'
@@ -161,7 +168,7 @@ function App() {
   const [category, setCategory] = useState<PieceCategory>('Wood')
   const [search, setSearch] = useState('')
   const [showMap, setShowMap] = useState(true)
-  const [showGrid, setShowGrid] = useState(false)
+  const [showGrid, setShowGrid] = useState(!initial.mapImageName && !initial.localMapId && !initial.mapInfo)
   const [showAnchors, setShowAnchors] = useState(false)
   const [showComfortRanges, setShowComfortRanges] = useState(false)
   const [showSuppressionRanges, setShowSuppressionRanges] = useState(false)
@@ -180,6 +187,7 @@ function App() {
   const [farmMode, setFarmMode] = useState<FarmMode>('cultivator')
   const [pendingMapChange, setPendingMapChange] = useState<MapChangeRequest>()
   const [pendingProjectImport, setPendingProjectImport] = useState<ProjectImportRequest>()
+  const [pendingNewProject, setPendingNewProject] = useState(false)
   const [projectBusy, setProjectBusy] = useState(false)
   const [saveBusy, setSaveBusy] = useState(false)
   const [promptError, setPromptError] = useState('')
@@ -314,9 +322,12 @@ function App() {
             initial.pieces.length || initial.annotations.length
               ? initial.mapImageName
                 ? `Draft restored · ${initial.mapImageName} is not in the map library`
-                : 'Draft restored · choose the PNG map that belongs to this plan once'
+                : 'Draft restored · continue building or import your world PNG'
               : 'Choose a piece to start building, or import your world PNG',
           )
+          if (!initial.mapImageName && !initial.localMapId && !initial.mapInfo) {
+            requestAnimationFrame(() => canvasRef.current?.focusAt(initial.pieces[0] ?? { x: 0, y: 0 }))
+          }
         }
       } catch (error) {
         console.error('Could not load local PNG map', error)
@@ -718,6 +729,37 @@ function App() {
     )
   }
 
+  const startNewProject = () => {
+    const blank = emptyProjectState()
+    clearPlan()
+    setProjectName(blank.name)
+    setSeed(blank.seed)
+    replaceMapImage('')
+    setLocalMapId('')
+    setMapStatus('empty')
+    setMapInfo({ width: 0, height: 0, metersPerPixel: 0, resolution: 'custom', imageName: '' })
+    rememberProjectPath()
+    savedPlanRef.current = undefined
+    setTool('select')
+    setRotation(0)
+    setShowMap(true)
+    setShowGrid(true)
+    setShowComfortRanges(false)
+    setShowSuppressionRanges(false)
+    setShowCraftingRanges(false)
+    setPendingNewProject(false)
+    setPromptError('')
+    setNotice('New project · choose a piece to start building, or import your world PNG')
+    requestAnimationFrame(() => canvasRef.current?.focusAt({ x: 0, y: 0 }))
+  }
+
+  const requestNewProject = () => {
+    if (!mapInitializationComplete || projectBusy || saveBusyRef.current) return
+    setPromptError('')
+    if (hasUnsavedPlan()) setPendingNewProject(true)
+    else startNewProject()
+  }
+
   const serializeProject = async () => {
     const project = { ...draftProject }
     if (mapStatus === 'imported' && mapImage) {
@@ -988,6 +1030,13 @@ function App() {
             <CircleHelp size={17} />
           </button>
           <button
+            className="secondary-button new-project-button"
+            disabled={!mapInitializationComplete || projectBusy || saveBusy}
+            onClick={requestNewProject}
+          >
+            <FilePlus2 size={17} /> New project
+          </button>
+          <button
             className="icon-button"
             title="Open project"
             disabled={saveBusy}
@@ -1042,8 +1091,12 @@ function App() {
                   id="map-select"
                   className="map-select"
                   value={localMapId}
+                  disabled={!mapInitializationComplete || projectBusy || saveBusy}
                   onChange={(event) => requestMapChange({ kind: 'local', id: event.target.value })}
                 >
+                  <option value="" disabled>
+                    Choose a map (optional)
+                  </option>
                   {localMaps.map((map) => (
                     <option key={map.id} value={map.id}>
                       {map.imageName} · {map.resolution}
@@ -1063,7 +1116,11 @@ function App() {
                 </small>
               </div>
             </div>
-            <button className="text-button" onClick={() => mapInputRef.current?.click()}>
+            <button
+              className="text-button"
+              disabled={!mapInitializationComplete || projectBusy || saveBusy}
+              onClick={() => mapInputRef.current?.click()}
+            >
               <ImagePlus size={15} /> Import PNG map
             </button>
             <button className="text-button subdued" onClick={() => setShowHelp(true)}>
@@ -1676,6 +1733,11 @@ function App() {
             <Focus size={17} /> Start guided walkthrough
           </button>
 
+          <p>
+            A map is optional. Use <b>New project</b> at the top to start on a blank grid. You can save your
+            current plan first and import a map later. The steps below explain planning on a map.
+          </p>
+
           <ol className="getting-started-steps">
             <li>
               <strong>Download your world map</strong>
@@ -1764,6 +1826,51 @@ function App() {
         <Modal labelledBy="project-loading-title" onClose={() => {}}>
           <h2 id="project-loading-title">Opening your plan…</h2>
           <p>Preparing the project and its map.</p>
+        </Modal>
+      )}
+
+      {pendingNewProject && (
+        <Modal
+          labelledBy="new-project-title"
+          onClose={() => {
+            if (!saveBusy) setPendingNewProject(false)
+          }}
+        >
+          <div className="save-prompt-icon">
+            <Save size={22} />
+          </div>
+          <span className="section-kicker">UNSAVED CHANGES</span>
+          <h2 id="new-project-title">Save before starting a new project?</h2>
+          <p>
+            Start with a blank canvas and one ground-floor level. Save “{projectName}” first to keep your
+            current work. Your map library and saved project files will stay available.
+          </p>
+          {promptError && (
+            <p className="prompt-error" role="alert">
+              {promptError}
+            </p>
+          )}
+          <div className="modal-actions">
+            <button
+              className="primary-button"
+              disabled={saveBusy}
+              onClick={async () => {
+                if (await saveProject()) startNewProject()
+              }}
+            >
+              <Save size={15} /> {saveBusy ? 'Saving…' : 'Save & start new'}
+            </button>
+            <button className="danger-button" disabled={saveBusy} onClick={startNewProject}>
+              Start without saving
+            </button>
+            <button
+              className="secondary-button"
+              disabled={saveBusy}
+              onClick={() => setPendingNewProject(false)}
+            >
+              Cancel
+            </button>
+          </div>
         </Modal>
       )}
 

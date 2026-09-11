@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.2 — Start a new blank project
+
+- Added a visible New project button with Save & start new, Start without saving, and Cancel choices.
+- New projects open on a blank grid at building zoom with one ground-floor level. Saved projects and the map library remain available.
+- Clear the previous map, file destination, selection, and editing history when starting over; the blank project is restored on the next launch.
+- Explained the new control in the walkthrough and getting-started guide.
+
 ## 1.2.1 — Correct PNG map scale
 
 - Corrected full-world Image Only PNG calibration to a 24,576-meter span: 3 meters per pixel for an 8192 × 8192 image.
